@@ -84,9 +84,12 @@ fun main() {
                         if (!isSuccessful) {
                             bot.sendMessage(chat.id, "Service temporary unavailable")
                         } else {
-                            val msg = (body() ?: emptyList()).joinToString("\n\n") {
+                            var msg = (body() ?: emptyList()).joinToString("\n\n") {
                                 "${it.link}\n" + it.contexts.joinToString("\n")
                             }
+                            if (msg.trim().isEmpty())
+                               msg = "Not found"
+
                             bot.sendMessage(
                                 chat.id, msg,
                                 disableWebPagePreview = true, parseMode = ParseMode.MARKDOWN
