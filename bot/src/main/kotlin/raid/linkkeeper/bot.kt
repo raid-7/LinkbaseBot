@@ -52,7 +52,7 @@ fun main() {
     val bot = bot {
         token = getenv("TELEGRAM_TOKEN")
         proxy = getEnvProxy()
-        logLevel = HttpLoggingInterceptor.Level.NONE
+        logLevel = HttpLoggingInterceptor.Level.BASIC
 
         dispatch {
             command("delete") { bot, update ->
