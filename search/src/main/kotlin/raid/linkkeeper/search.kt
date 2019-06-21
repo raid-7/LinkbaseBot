@@ -2,6 +2,7 @@ package raid.linkkeeper
 
 import org.jsoup.Jsoup
 import raid.linkkeeper.data.LinkSearchResult
+import java.io.IOException
 
 
 fun prepareLink(l: String) = if (l.startsWith("http")) {
@@ -14,8 +15,12 @@ fun doSearch(link: String, text: String): LinkSearchResult {
     val url = prepareLink(link)
 
     println("Scrapping: $url")
-    val doc = Jsoup.connect(url).get()
-    Jsoup.connect(url)
+    val doc = try {
+        Jsoup.connect(url).get()
+    } catch (exc: IOException) {
+        exc.printStackTrace()
+        return LinkSearchResult(url, emptyList())
+    }
     return LinkSearchResult(url, searchInText(text, doc.text()))
 }
 
