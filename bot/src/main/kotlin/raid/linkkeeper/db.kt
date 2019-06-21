@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.lang.System.getenv
 import java.sql.Connection
 import java.sql.DriverManager
+import java.sql.SQLException
 
 object Links : Table("links") {
     val chatId = long("chat_id").primaryKey()
@@ -21,7 +22,11 @@ class Db(url: String? = null) {
 
     init {
         val finalUrl = url ?: getenv("DB_URL") ?: "jdbc:sqlite:bot-test.db"
-        val driver = DriverManager.getDriver(finalUrl).javaClass.name
+        val driver = try {
+            DriverManager.getDriver(finalUrl).javaClass.name
+        } catch (_: SQLException) {
+            "org.sqlite.JDBC"
+        }
         conn = Database.connect(finalUrl, driver)
 
         transaction {
