@@ -1,34 +1,17 @@
 package raid.linkkeeper
 
-import me.ivmg.telegram.HandleUpdate
 import me.ivmg.telegram.bot
 import me.ivmg.telegram.dispatch
 import me.ivmg.telegram.dispatcher.command
 import me.ivmg.telegram.dispatcher.text
-import me.ivmg.telegram.dispatcher.handlers.Handler
-import me.ivmg.telegram.dispatcher.Dispatcher
-import me.ivmg.telegram.entities.Update
 import me.ivmg.telegram.entities.Message
 import me.ivmg.telegram.entities.ParseMode
 import okhttp3.logging.HttpLoggingInterceptor
 import raid.linkkeeper.data.LinkSearchRequest
-import retrofit2.await
 import java.lang.System.getenv
 import java.net.InetSocketAddress
 import java.net.Proxy
 
-
-class DefaultHandler(func: HandleUpdate) : Handler(func) {
-    override val groupIdentifier = "DefaultHandler"
-
-    override fun checkUpdate(update: Update): Boolean {
-        return true
-    }
-}
-
-fun Dispatcher.addDefault(func: HandleUpdate) {
-    addHandler(DefaultHandler(func))
-}
 
 val Message.urls: List<String>
     get() = (entities ?: emptyList()).mapNotNull {
@@ -45,7 +28,7 @@ fun getEnvProxy(): Proxy {
     return Proxy(Proxy.Type.SOCKS, InetSocketAddress(parts[0], parts[1].toInt()))
 }
 
-//val links = mutableMapOf<Long, MutableSet<String>>()
+
 val db = Db()
 
 fun main() {
