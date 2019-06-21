@@ -19,7 +19,7 @@ import raid.linkkeeper.data.LinkSearchResult
 @UnstableDefault
 fun main(args: Array<String>) {
     port(8080)
-    ipAddress("127.0.0.1")
+    ipAddress("0.0.0.0")
     threadPool(16, 2, 1000)
 
     post("/search") {
