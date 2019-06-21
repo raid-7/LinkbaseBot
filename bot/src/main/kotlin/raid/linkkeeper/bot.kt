@@ -49,6 +49,8 @@ fun getEnvProxy(): Proxy {
 val db = Db()
 
 fun main() {
+    println(retrofitUrl)
+
     val bot = bot {
         token = getenv("TELEGRAM_TOKEN")
         proxy = getEnvProxy()
