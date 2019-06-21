@@ -56,9 +56,12 @@ fun main() {
 
         dispatch {
             command("delete") { bot, update ->
-                update.message?.replyToMessage?.apply {
+                update.message?.apply {
                     bot.deleteMessage(chat.id, messageId)
-                    urls.forEach { db.removeLink(chat.id, it) }
+                    replyToMessage?.apply {
+                        bot.deleteMessage(chat.id, messageId)
+                        urls.forEach { db.removeLink(chat.id, it) }
+                    }
                 }
             }
 
