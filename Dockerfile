@@ -6,7 +6,7 @@ WORKDIR /app
 RUN mvn install
 
 
-FROM bellsoft/liberica-openjre-debian:10 AS runner
+FROM openjdk:11-jdk-slim AS runner
 
 RUN apt-get update && apt-get install -y curl nano htop
 
