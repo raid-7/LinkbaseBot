@@ -9,6 +9,7 @@ import me.ivmg.telegram.entities.ParseMode
 import okhttp3.logging.HttpLoggingInterceptor
 import raid.linkkeeper.data.LinkSearchRequest
 import raid.linkkeeper.data.LinkSearchResult
+import raid.linkkeeper.db.ChatState
 import raid.linkkeeper.db.Db
 import retrofit2.Call
 import retrofit2.Callback
@@ -43,20 +44,39 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
 
         dispatch {
             text { _, update ->
-                update.message?.let(::saveLinks)
-                update.message?.let(::saveTags)
+                update.message?.apply {
+                    if (text?.startsWith("/") != false)
+                        return@apply
+
+                    when (db.getChatState(chat.id)) {
+                        ChatState.COMMON -> {
+                            saveLinks(this)
+                            if (urls.isNotEmpty())
+                                saveTags(this)
+                        }
+                        ChatState.SEARCH -> {
+                            text?.let { searchImpl(chat.id, it) }
+                        }
+                    }
+                }
             }
 
             command("delete") { _, update ->
                 update.message?.apply {
                     deleteImpl(this)
+                    db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
 
             command("search") { _, update, args ->
                 update.message?.apply {
-                    val text = args.joinToString(" ")
-                    searchImpl(chat.id, text)
+                    val text = args.joinToString(" ").trim()
+                    if (text.isEmpty()) {
+                        db.setChatState(chat.id, ChatState.SEARCH)
+                        sendSearchPhraseRequest(chat.id)
+                    } else {
+                        searchImpl(chat.id, text)
+                    }
                 }
             }
 
@@ -64,6 +84,7 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
                 update.message?.apply {
                     val links = db.getUserLinks(chat.id)
                     sendLinksList(chat.id, links)
+                    db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
 
@@ -71,17 +92,20 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
                 update.message?.apply {
                     val tags = db.getUserTags(chat.id)
                     sendTagsList(chat.id, tags)
+                    db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
 
             command("help") { _, update ->
                 update.message?.apply {
                     sendHelp(chat.id)
+                    db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
             command("start") { _, update ->
                 update.message?.apply {
                     sendHelp(chat.id)
+                    db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
         }
@@ -97,6 +121,10 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
 
     private fun saveTags(msg: Message) {
         msg.tags.forEach { db.addTag(msg.chat.id, it) }
+    }
+
+    private fun sendSearchPhraseRequest(chatId: Long) {
+        bot.sendMessage(chatId, "Enter search keywords:")
     }
 
     private fun sendTagsList(chatId: Long, tags: List<String>) {
@@ -152,13 +180,23 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
         )
     }
 
+    private fun sendDeleteExplanation(chatId: Long) {
+        bot.sendMessage(
+            chatId,
+            """
+                /delete without attached message does nothing.
+                Reply with /delete to your message with a link to remove it.
+            """.trimIndent()
+        )
+    }
+
     private fun deleteImpl(request: Message) {
         request.apply {
             bot.deleteMessage(chat.id, messageId)
             replyToMessage?.apply {
                 bot.deleteMessage(chat.id, messageId)
                 urls.forEach { db.removeLink(chat.id, it) }
-            }
+            } ?: sendDeleteExplanation(chat.id)
         }
     }
 

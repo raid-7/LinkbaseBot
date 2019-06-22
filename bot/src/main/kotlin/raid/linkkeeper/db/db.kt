@@ -3,10 +3,13 @@ package raid.linkkeeper.db
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.DEFAULT_REPETITION_ATTEMPTS
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.lang.System.getenv
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
+
+enum class ChatState {
+    COMMON, SEARCH
+}
 
 object Links : Table("links") {
     val chatId = long("chat_id").primaryKey()
@@ -14,12 +17,16 @@ object Links : Table("links") {
 }
 
 object Tags : Table("tags") {
-    val chatId = Links.long("chat_id").primaryKey()
-    val tag = Links.text("tag").primaryKey()
+    val chatId = long("chat_id").primaryKey()
+    val tag = text("tag").primaryKey()
+}
+
+object ChatStates : Table("chat_states") {
+    val chatId = long("chat_id").primaryKey()
+    val state = enumeration("state", ChatState::class)
 }
 
 class Db(url: String? = null) {
-
     val conn: Database
 
     init {
@@ -98,8 +105,42 @@ class Db(url: String? = null) {
             }
         }
 
+    fun withState(chat: Long, callback: (ChatState) -> ChatState) {
+        transaction {
+            setChatState(chat, callback(getChatState(chat)))
+        }
+    }
+
+    fun withState(chat: Long, fromState: ChatState, callback: () -> ChatState) {
+        withState(chat) {
+            if (it == fromState) {
+                callback()
+            } else {
+                it
+            }
+        }
+    }
+
+    fun getChatState(chat: Long): ChatState {
+        val row = ChatStates.select {
+            ChatStates.chatId.eq(chat)
+        }.firstOrNull()
+        return row?.let {it[ChatStates.state] } ?: ChatState.values()[0]
+    }
+
+    fun setChatState(chat: Long, state: ChatState) {
+        val row = ChatStates.update({ ChatStates.chatId.eq(chat) }) {
+            it[ChatStates.state] = state
+        }
+        if (row != 0) {
+            ChatStates.insert {
+                it[chatId] = chat
+                it[ChatStates.state] = state
+            }
+        }
+    }
+
     private fun <T> transaction(statement: Transaction.() -> T): T = transaction(
         Connection.TRANSACTION_SERIALIZABLE, DEFAULT_REPETITION_ATTEMPTS, conn, statement
     )
-
 }
