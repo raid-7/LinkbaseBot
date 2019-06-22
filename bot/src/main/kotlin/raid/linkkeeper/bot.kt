@@ -56,6 +56,7 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
                         }
                         ChatState.SEARCH -> {
                             text?.let { searchImpl(chat.id, it) }
+                            db.setChatState(chat.id, ChatState.COMMON)
                         }
                     }
                 }
@@ -76,6 +77,7 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
                         sendSearchPhraseRequest(chat.id)
                     } else {
                         searchImpl(chat.id, text)
+                        db.setChatState(chat.id, ChatState.COMMON)
                     }
                 }
             }

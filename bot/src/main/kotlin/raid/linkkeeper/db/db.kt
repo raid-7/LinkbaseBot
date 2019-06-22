@@ -138,7 +138,7 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         val row = ChatStates.update({ ChatStates.chatId.eq(chat) }) {
             it[ChatStates.state] = state
         }
-        if (row != 0) {
+        if (row == 0) {
             ChatStates.insert {
                 it[chatId] = chat
                 it[ChatStates.state] = state
