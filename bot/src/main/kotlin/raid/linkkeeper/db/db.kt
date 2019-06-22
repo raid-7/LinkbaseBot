@@ -26,8 +26,8 @@ object ChatStates : Table("chat_states") {
     val state = enumeration("state", ChatState::class)
 }
 
-class Db(url: String? = null) {
-    val conn: Database
+class Db(url: String? = null, user: String? = null, password: String? = null) {
+    private val conn: Database
 
     init {
         val finalUrl = url ?: "jdbc:sqlite:bot-test.db"
@@ -36,7 +36,7 @@ class Db(url: String? = null) {
         } catch (_: SQLException) {
             "org.sqlite.JDBC"
         }
-        conn = Database.connect(finalUrl, driver)
+        conn = Database.connect(finalUrl, driver, user = user ?: "", password = password ?: "")
 
         transaction {
             SchemaUtils.create(Links)
@@ -125,7 +125,7 @@ class Db(url: String? = null) {
         val row = ChatStates.select {
             ChatStates.chatId.eq(chat)
         }.firstOrNull()
-        return row?.let {it[ChatStates.state] } ?: ChatState.values()[0]
+        return row?.let { it[ChatStates.state] } ?: ChatState.values()[0]
     }
 
     fun setChatState(chat: Long, state: ChatState) {

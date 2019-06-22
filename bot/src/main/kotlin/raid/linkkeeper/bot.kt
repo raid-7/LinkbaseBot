@@ -230,6 +230,7 @@ fun getEnvProxy(): Proxy {
 fun main() {
     println(retrofitUrl)
 
-    val bot = LinkKeeperBot(getenv("TELEGRAM_TOKEN"), Db(getenv("DB_URL")), getEnvProxy())
+    val db = Db(getenv("DB_URL"), getenv("DB_USER"), getenv("DB_PASSWORD"))
+    val bot = LinkKeeperBot(getenv("TELEGRAM_TOKEN"), db, getEnvProxy())
     bot.startPolling()
 }
