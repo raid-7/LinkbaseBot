@@ -127,14 +127,14 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         }
     }
 
-    fun getChatState(chat: Long): ChatState {
+    fun getChatState(chat: Long): ChatState = transaction {
         val row = ChatStates.select {
             ChatStates.chatId.eq(chat)
         }.firstOrNull()
-        return row?.let { it[ChatStates.state] } ?: ChatState.values()[0]
+        row?.let { it[ChatStates.state] } ?: ChatState.values()[0]
     }
 
-    fun setChatState(chat: Long, state: ChatState) {
+    fun setChatState(chat: Long, state: ChatState): Unit = transaction {
         val row = ChatStates.update({ ChatStates.chatId.eq(chat) }) {
             it[ChatStates.state] = state
         }
