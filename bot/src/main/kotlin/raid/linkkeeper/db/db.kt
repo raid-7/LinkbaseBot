@@ -45,7 +45,7 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         conn = Database.connect(finalUrl, driver, user = user ?: "", password = password ?: "")
 
         transaction {
-            SchemaUtils.create(Links)
+            SchemaUtils.create(Links, Tags, ChatStates)
         }
     }
 
