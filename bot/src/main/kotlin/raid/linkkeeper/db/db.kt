@@ -34,7 +34,13 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         val driver = try {
             DriverManager.getDriver(finalUrl).javaClass.name
         } catch (_: SQLException) {
-            "org.sqlite.JDBC"
+            if (finalUrl.contains("sqlite")) {
+                "org.sqlite.JDBC"
+            } else if (finalUrl.contains("postgres")) {
+                "org.postgresql.Driver"
+            } else {
+                throw RuntimeException("Cannot determine jdbc driver")
+            }
         }
         conn = Database.connect(finalUrl, driver, user = user ?: "", password = password ?: "")
 
