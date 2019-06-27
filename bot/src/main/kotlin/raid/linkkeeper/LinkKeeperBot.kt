@@ -14,12 +14,10 @@ import raid.linkkeeper.db.Db
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.lang.System.getenv
-import java.net.InetSocketAddress
 import java.net.Proxy
 
 
-internal val Message.urls: List<String>
+private val Message.urls: List<String>
     get() = (entities ?: emptyList()).mapNotNull {
         when {
             it.type == "text_link" -> it.url!!
@@ -28,7 +26,7 @@ internal val Message.urls: List<String>
         }
     }
 
-internal val Message.tags: List<String>
+private val Message.tags: List<String>
     get() = (entities ?: emptyList())
         .filter { it.type == "hashtag" }
         .map {
@@ -36,7 +34,7 @@ internal val Message.tags: List<String>
         }
 
 
-class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = Proxy.NO_PROXY) {
+internal class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = Proxy.NO_PROXY) {
     private val bot = bot {
         token = tgToken
         this.proxy = proxy
@@ -50,9 +48,12 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
 
                     when (db.getChatState(chat.id)) {
                         ChatState.COMMON -> {
-                            saveLinks(this)
-                            if (urls.isNotEmpty())
+                            if (urls.isNotEmpty()) {
                                 saveTags(this)
+                                saveLinks(this)
+                            } else {
+                                bot.deleteMessage(chat.id, messageId)
+                            }
                         }
                         ChatState.SEARCH -> {
                             text?.let { searchImpl(chat.id, it) }
@@ -152,13 +153,13 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
             chatId,
             """
             Hi, I can keep your links and search through them.
-            
+
             Just send me a url and I'll save it.
             Reply to sent link with /delete to remove the url.
             Use /search *some text* to look for *some text* on all saved pages.
-            
+
             Use /links to see the list of saved links.
-            
+
             You can attach hashtags to your messages with links to take advantage of Telegram search.
             I can show you the list of all your hashtags. Just type /tags.
             """.trimIndent(), parseMode = ParseMode.MARKDOWN
@@ -206,7 +207,8 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
         val links = db.getUserLinks(chatId)
         val req = LinkSearchRequest(links, text)
 
-        searchService.search(req).enqueue(object : Callback<List<LinkSearchResult>> {
+        searchService.search(req).enqueue(object :
+            Callback<List<LinkSearchResult>> {
             override fun onResponse(
                 call: Call<List<LinkSearchResult>>,
                 response: Response<List<LinkSearchResult>>
@@ -220,19 +222,4 @@ class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = P
             }
         })
     }
-}
-
-
-fun getEnvProxy(): Proxy {
-    val url: String = getenv("PROXY_URL") ?: return Proxy.NO_PROXY
-    val parts = url.split(':')
-    return Proxy(Proxy.Type.SOCKS, InetSocketAddress(parts[0], parts[1].toInt()))
-}
-
-fun main() {
-    println(retrofitUrl)
-
-    val db = Db(getenv("DB_URL"), getenv("DB_USER"), getenv("DB_PASSWORD"))
-    val bot = LinkKeeperBot(getenv("TELEGRAM_TOKEN"), db, getEnvProxy())
-    bot.startPolling()
 }

@@ -6,18 +6,16 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.list
+import raid.linkkeeper.data.LinkSearchRequest
+import raid.linkkeeper.data.LinkSearchResult
 import spark.kotlin.ipAddress
 import spark.kotlin.port
 import spark.kotlin.post
 import spark.kotlin.threadPool
 
-import raid.linkkeeper.data.LinkSearchRequest
-import raid.linkkeeper.data.LinkSearchResult
-
-
 
 @UnstableDefault
-fun main(args: Array<String>) {
+fun main() {
     port(8080)
     ipAddress("0.0.0.0")
     threadPool(16, 2, 1000)

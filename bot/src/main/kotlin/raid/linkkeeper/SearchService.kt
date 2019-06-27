@@ -16,8 +16,8 @@ interface SearchService {
 }
 
 val retrofitUrl = getenv("SEARCH_SERVICE_URL") ?: "http://localhost:8080"
-val retrofit = Retrofit.Builder()
+val retrofit: Retrofit = Retrofit.Builder()
     .baseUrl(retrofitUrl)
     .addConverterFactory(GsonConverterFactory.create())
     .build()
-val searchService = retrofit.create(SearchService::class.java)
+val searchService: SearchService = retrofit.create(SearchService::class.java)

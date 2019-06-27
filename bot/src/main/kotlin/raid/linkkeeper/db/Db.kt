@@ -34,12 +34,10 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         val driver = try {
             DriverManager.getDriver(finalUrl).javaClass.name
         } catch (_: SQLException) {
-            if (finalUrl.contains("sqlite")) {
-                "org.sqlite.JDBC"
-            } else if (finalUrl.contains("postgres")) {
-                "org.postgresql.Driver"
-            } else {
-                throw RuntimeException("Cannot determine jdbc driver")
+            when {
+                finalUrl.contains("sqlite") -> "org.sqlite.JDBC"
+                finalUrl.contains("postgres") -> "org.postgresql.Driver"
+                else -> throw RuntimeException("Cannot determine jdbc driver")
             }
         }
         conn = Database.connect(finalUrl, driver, user = user ?: "", password = password ?: "")
@@ -110,22 +108,6 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
                 it[Tags.tag]
             }
         }
-
-    fun withState(chat: Long, callback: (ChatState) -> ChatState) {
-        transaction {
-            setChatState(chat, callback(getChatState(chat)))
-        }
-    }
-
-    fun withState(chat: Long, fromState: ChatState, callback: () -> ChatState) {
-        withState(chat) {
-            if (it == fromState) {
-                callback()
-            } else {
-                it
-            }
-        }
-    }
 
     fun getChatState(chat: Long): ChatState = transaction {
         val row = ChatStates.select {
