@@ -2,5 +2,5 @@ LinkbaseBot
 ========
 [LinkbaseBot](https://t.me/LinkbaseBot) can keep your links and look through the pages they point to.
 
-## Contributing
-Feel free to open an issue or a pull request.
+## Bug reports and feature requests
+Feel free to create an issue.

@@ -14,9 +14,10 @@ class PageExplorer(soup: Document) {
     }
 
     private fun searchInText(re: Regex, text: String): List<String> {
-        return re.findAll(text)
+        val textSpaced = " $text "
+        return re.findAll(textSpaced)
             .map {
-                getOccurrenceContext(text, it)
+                getOccurrenceContext(textSpaced, it)
             }.toList()
     }
 
@@ -40,7 +41,9 @@ class PageExplorer(soup: Document) {
         s = re.find(s)?.groupValues?.getOrNull(1) ?: match.value
         s = s.replace(Regex("""[`*_]"""), " ")
             .replace(Regex("""\s+"""), " ")
-            .replace(match.value, "*${match.value}*", ignoreCase = true)
+
+        val exactMatch = match.value.trim()
+        s = s.replace(exactMatch, "*$exactMatch*", ignoreCase = true)
 
         return s.trim()
     }
@@ -48,14 +51,14 @@ class PageExplorer(soup: Document) {
     private class Node(el: Element) {
         private val text: String = el.text()
         private val children: List<Node> = el.children()
-            .filter { it.isBlock }
+            .filter { it.isBlock || it.select("*").any(Element::isBlock) }
             .map { Node(it) }
 
         fun search(strategy: (String) -> List<String>): List<String> {
             val childRes = children.flatMap { it.search(strategy) }
-            if (childRes.isEmpty())
-                return strategy(text)
-            return childRes
+            if (childRes.isNotEmpty())
+                return childRes
+            return strategy(text)
         }
     }
 }

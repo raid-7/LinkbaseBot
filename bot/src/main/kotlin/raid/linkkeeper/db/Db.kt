@@ -128,6 +128,24 @@ class Db(url: String? = null, user: String? = null, password: String? = null) {
         }
     }
 
+    fun countChats(): Int = transaction {
+        Links.slice(Links.chatId.countDistinct())
+            .selectAll()
+            .first()[Links.chatId.countDistinct()]
+    }
+
+    fun countLinks(): Int = transaction {
+        Links.slice(Links.chatId.count())
+            .selectAll()
+            .first()[Links.chatId.count()]
+    }
+
+    fun countTags(): Int = transaction {
+        Tags.slice(Tags.chatId.count())
+            .selectAll()
+            .first()[Tags.chatId.count()]
+    }
+
     private fun <T> transaction(statement: Transaction.() -> T): T = transaction(
         Connection.TRANSACTION_SERIALIZABLE, DEFAULT_REPETITION_ATTEMPTS, conn, statement
     )

@@ -1,24 +1,27 @@
 package raid.linkkeeper
 
 import org.jsoup.Jsoup
+import org.slf4j.LoggerFactory
 import raid.linkkeeper.data.LinkSearchResult
 import java.io.IOException
 
 
-internal fun prepareLink(l: String) = if (l.startsWith("http")) {
+private fun prepareLink(l: String) = if (l.startsWith("http")) {
     l
 } else {
     "http://$l"
 }
 
+private val logger = LoggerFactory.getLogger("SearchService")
+
 internal fun doSearch(link: String, text: String): LinkSearchResult {
     val url = prepareLink(link)
+    logger.info("Scrapping: $url")
 
-    println("Scrapping: $url")
     val doc = try {
         Jsoup.connect(url).get()
     } catch (exc: IOException) {
-        exc.printStackTrace()
+        logger.error("Scrapping failed", exc)
         return LinkSearchResult(url, emptyList())
     }
     val explorer = PageExplorer(doc)

@@ -3,10 +3,12 @@ package raid.linkkeeper
 import me.ivmg.telegram.bot
 import me.ivmg.telegram.dispatch
 import me.ivmg.telegram.dispatcher.command
+import me.ivmg.telegram.dispatcher.telegramError
 import me.ivmg.telegram.dispatcher.text
 import me.ivmg.telegram.entities.Message
 import me.ivmg.telegram.entities.ParseMode
 import okhttp3.logging.HttpLoggingInterceptor
+import org.slf4j.LoggerFactory
 import raid.linkkeeper.data.LinkSearchRequest
 import raid.linkkeeper.data.LinkSearchResult
 import raid.linkkeeper.db.ChatState
@@ -35,6 +37,8 @@ private val Message.tags: List<String>
 
 
 internal class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: Proxy = Proxy.NO_PROXY) {
+    private val logger = LoggerFactory.getLogger(LinkKeeperBot::class.java)
+
     private val bot = bot {
         token = tgToken
         this.proxy = proxy
@@ -43,6 +47,8 @@ internal class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: 
         dispatch {
             text { _, update ->
                 update.message?.apply {
+                    logger.info("Got update: ${update.updateId}")
+
                     if (text?.startsWith("/") != false)
                         return@apply
 
@@ -111,11 +117,38 @@ internal class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: 
                     db.setChatState(chat.id, ChatState.COMMON)
                 }
             }
+
+            command("stats") { _, update ->
+                update.message?.apply {
+                    sendStats(chat.id)
+                }
+            }
+
+            telegramError { _, err ->
+                logger.error("Telegram error: ${err.getErrorMessage()}")
+            }
         }
     }
 
     fun startPolling() {
         bot.startPolling()
+    }
+
+    private fun sendStats(chatId: Long) {
+        bot.sendMessage(
+            chatId,
+            """
+            Bot usage statistics:
+
+            Chats: %d
+            Links: %d
+            Tags: %d
+            """.trimIndent().format(
+                db.countChats(),
+                db.countLinks(),
+                db.countTags()
+            )
+        )
     }
 
     private fun saveLinks(msg: Message) {
@@ -217,8 +250,8 @@ internal class LinkKeeperBot(tgToken: String, private val db: Db = Db(), proxy: 
             }
 
             override fun onFailure(call: Call<List<LinkSearchResult>>, t: Throwable) {
+                logger.error("SearchService failed", t)
                 sendSearchError(chatId)
-                t.printStackTrace()
             }
         })
     }
